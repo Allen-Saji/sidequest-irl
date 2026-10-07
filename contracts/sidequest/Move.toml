@@ -1,0 +1,6 @@
+[package]
+name = "sidequest"
+edition = "2024.beta"
+
+[addresses]
+sidequest = "0x0"
