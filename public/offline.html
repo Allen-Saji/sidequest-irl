@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <meta name="theme-color" content="#f5f0e5" />
+    <title>Sidequest - Offline</title>
+    <style>
+      @font-face {
+        font-family: Barlow;
+        src: url("/fonts/barlow-condensed-800.ttf");
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: #f5f0e5;
+        color: #252820;
+        font: 16px/1.7 sans-serif;
+      }
+      main {
+        max-width: 440px;
+        margin: 12vh auto;
+        padding: 24px;
+      }
+      small {
+        font: 12px monospace;
+        letter-spacing: 2px;
+      }
+      h1 {
+        font:
+          800 72px/0.95 Barlow,
+          sans-serif;
+        margin: 32px 0 24px;
+      }
+      p {
+        max-width: 340px;
+      }
+      a {
+        display: block;
+        padding: 15px 20px;
+        background: #de512b;
+        color: white;
+        text-decoration: none;
+        text-align: center;
+        border-radius: 6px;
+        margin-top: 30px;
+        min-height: 48px;
+      }
+      button {
+        cursor: pointer;
+      }
+      .pdf-btn {
+        position: fixed;
+        right: 16px;
+        bottom: 16px;
+        padding: 12px 16px;
+        min-height: 44px;
+        border: 0;
+        border-radius: 99px;
+        background: #252820;
+        color: white;
+      }
+      @page {
+        margin: 14mm;
+      }
+      @media print {
+        .no-print,
+        a {
+          display: none;
+        }
+        body {
+          background: white;
+          color: black;
+        }
+        main {
+          margin: 0;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <small>SIDEQUEST IRL / OFFLINE</small>
+      <h1>THE NEXT<br />HELLO CAN<br />WAIT.</h1>
+      <p>
+        You are offline. Reconnect to see current quests and add your
+        confirmation.
+      </p>
+      <p>
+        Your completed tickets are saved on the server and Sui testnet. They
+        will be here when you return.
+      </p>
+      <a href="/">Try again</a>
+    </main>
+    <button
+      class="pdf-btn no-print"
+      onclick="window.print()"
+      aria-label="Download as PDF"
+    >
+      Download PDF
+    </button>
+  </body>
+</html>
