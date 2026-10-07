@@ -1,0 +1,12 @@
+node_modules/
+.next/
+.local/
+.env*
+!.env.example
+data/
+test-results/
+playwright-report/
+*.tsbuildinfo
+contracts/**/build/
+contracts/**/Move.lock
+contracts/**/Published.toml
