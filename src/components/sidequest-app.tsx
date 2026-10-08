@@ -260,9 +260,15 @@ function App() {
     );
     setRecovery(pending);
     setBusy("Checking testnet");
-    const synced = await api<{ quests: Quest[] }>("/api/sync", {
-      digest: pending.digest,
-    });
+    let synced: { quests: Quest[] };
+    try {
+      synced = await api<{ quests: Quest[] }>("/api/sync", {
+        digest: pending.digest,
+      });
+    } catch (error) {
+      setModal(null);
+      throw error;
+    }
     localStorage.removeItem("sidequest-pending-transaction");
     setRecovery(null);
     await refresh();
@@ -280,6 +286,10 @@ function App() {
     });
   const createQuest = async (data: QuestInput) =>
     run(async () => {
+      if (recovery)
+        throw new Error(
+          "Check your submitted transaction before creating another quest.",
+        );
       const address = await ensureAuth();
       if (!ownProfile?.visible) {
         setModal("profile");
@@ -300,6 +310,10 @@ function App() {
     quest: Quest,
   ) =>
     run(async () => {
+      if (recovery)
+        throw new Error(
+          "Check your submitted transaction before taking another action.",
+        );
       const address = await ensureAuth();
       if (action === "claim" && !ownProfile?.visible) {
         setModal("profile");
@@ -452,10 +466,18 @@ function App() {
                       "Connect the wallet that submitted this transaction.",
                     );
                   setBusy("Checking testnet");
-                  await api("/api/sync", { digest: recovery.digest });
+                  const synced = await api<{ quests: Quest[] }>("/api/sync", {
+                    digest: recovery.digest,
+                  });
                   localStorage.removeItem("sidequest-pending-transaction");
                   setRecovery(null);
+                  setModal(null);
                   await refresh();
+                  const quest = synced.quests[0];
+                  go(
+                    quest.status === "completed" ? "journal" : "ticket",
+                    quest.id,
+                  );
                   setNotice("Transaction state recovered.");
                 })
               }

@@ -119,6 +119,21 @@ test("two independent phone sessions complete a real testnet ticket", async ({
   const leo = await browser.newContext({
     viewport: { width: 390, height: 844 },
   });
+  const syncDigests: string[] = [];
+  await maya.route("**/api/sync", async (route) => {
+    syncDigests.push(route.request().postDataJSON().digest);
+    if (syncDigests.length === 1) {
+      await route.fulfill({
+        status: 503,
+        contentType: "application/json",
+        body: JSON.stringify({
+          error: "Testnet is temporarily unavailable. Check the receipt again.",
+        }),
+      });
+    } else {
+      await route.continue();
+    }
+  });
   await testWallet(maya, "maya");
   await testWallet(leo, "leo");
   const creator = await maya.newPage();
@@ -135,7 +150,16 @@ test("two independent phone sessions complete a real testnet ticket", async ({
     .getByLabel("Public meeting point", { exact: true })
     .fill("Near the coffee counter");
   await creator.getByRole("button", { name: "Put my quest out there" }).click();
+  await expect(creator.getByRole("dialog")).toHaveCount(0);
+  await creator
+    .getByRole("button", { name: "Check submitted transaction" })
+    .click();
   await expect(creator.getByRole("heading", { name: title })).toBeVisible();
+  expect(syncDigests).toHaveLength(2);
+  expect(syncDigests[0]).toEqual(syncDigests[1]);
+  await expect(
+    creator.getByRole("button", { name: "Check submitted transaction" }),
+  ).toHaveCount(0);
   const questUrl = creator.url();
   await helper.goto(questUrl);
   await helper
@@ -217,7 +241,7 @@ test("rejected wallet sign-in stays recoverable without a session or success", a
     page.getByRole("button", { name: /Join the adventure|Save my profile/ }),
   ).toBeEnabled();
   const response = await context.request.get(
-    "http://localhost:3100/api/profile",
+    `${process.env.SIDEQUEST_TEST_URL ?? "http://localhost:3100"}/api/profile`,
   );
   expect((await response.json()).address).toBeNull();
   await expect(page.getByText("Your field notes are saved.")).toHaveCount(0);

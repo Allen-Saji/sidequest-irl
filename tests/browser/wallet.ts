@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import type { BrowserContext } from "@playwright/test";
 import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519";
-import { SuiGrpcClient } from "@mysten/sui/grpc";
+import { SuiGraphQLClient } from "@mysten/sui/graphql";
 import { Transaction } from "@mysten/sui/transactions";
 export async function testWallet(
   context: BrowserContext,
@@ -11,9 +11,9 @@ export async function testWallet(
   const signer = Ed25519Keypair.fromSecretKey(
     readFileSync(`.local/demo-${actor}.key`, "utf8").trim(),
   );
-  const client = new SuiGrpcClient({
+  const client = new SuiGraphQLClient({
     network: "testnet",
-    baseUrl: "https://fullnode.testnet.sui.io:443",
+    url: "https://graphql.testnet.sui.io/graphql",
   });
   // The test adapter holds keys in the Node test process. Browser pages only
   // receive public account details and wallet-standard signing responses.
@@ -53,9 +53,7 @@ export async function testWallet(
         sidequestTestSignMessage: (
           bytes: number[],
         ) => Promise<{ bytes: string; signature: string }>;
-        sidequestTestExecute: (
-          json: string,
-        ) => Promise<{
+        sidequestTestExecute: (json: string) => Promise<{
           bytes: string;
           signature: string;
           digest: string;
