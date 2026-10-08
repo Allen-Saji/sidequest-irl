@@ -1,6 +1,17 @@
 import type { NextConfig } from "next";
 const config: NextConfig = {
   serverExternalPackages: ["postgres"],
+  output: "standalone",
+  async rewrites() {
+    const origin = process.env.SIDEQUEST_API_ORIGIN;
+    return {
+      beforeFiles: origin
+        ? [{ source: "/api/:path*", destination: `${origin}/api/:path*` }]
+        : [],
+      afterFiles: [],
+      fallback: [],
+    };
+  },
   async headers() {
     return [
       {

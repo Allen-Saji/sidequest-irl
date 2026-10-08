@@ -10,3 +10,7 @@ playwright-report/
 contracts/**/build/
 contracts/**/Move.lock
 contracts/**/Published.toml
+.vercel
+
+supabase/.temp/
+supabase/.branches/

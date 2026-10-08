@@ -1,0 +1,14 @@
+.local
+.env*
+data
+contracts
+scripts
+tests
+test-results
+playwright-report
+*.tsbuildinfo
+
+supabase
+Dockerfile
+railway.toml
+playwright.config.ts
