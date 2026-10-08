@@ -1,6 +1,6 @@
 import { SuiGrpcClient } from "@mysten/sui/grpc";
 import { PACKAGE_ID, RPC_URL } from "./config";
-import { db, getQuests, saveQuest } from "./db";
+import { getDraft, getQuest, getQuests, saveQuest } from "./db";
 import type { Quest } from "./types";
 import { QuestBcs, QuestChangedBcs } from "./bcs";
 export const chain = new SuiGrpcClient({
@@ -36,13 +36,11 @@ export async function refreshQuest(id: string) {
   if (Number(fields.event_id) !== 20261007)
     throw new Error("This quest belongs to a different event.");
   const reference = referenceHex(fields.reference);
-  const row = db()
-    .prepare("SELECT data,creator FROM drafts WHERE reference=?")
-    .get(reference);
+  const row = await getDraft(reference);
   if (!row || row.creator !== fields.creator)
     throw new Error("Quest details are not available on this server.");
-  const draft = JSON.parse(row.data as string);
-  const previous = getQuests().find((q) => q.id === id);
+  const draft = row.data;
+  const previous = await getQuest(id);
   const status = (["open", "claimed", "completed", "canceled"] as const)[
     Number(fields.status)
   ];
@@ -62,7 +60,7 @@ export async function refreshQuest(id: string) {
     completedAt:
       status === "completed" ? (previous?.completedAt ?? Date.now()) : null,
   };
-  saveQuest(quest);
+  await saveQuest(quest);
   return quest;
 }
 
@@ -100,7 +98,7 @@ export async function refreshAll() {
   if (refreshInFlight) return refreshInFlight;
   if (Date.now() - lastRefresh < 4000) return;
   refreshInFlight = (async () => {
-    const quests = getQuests().filter(
+    const quests = (await getQuests()).filter(
       (q) => q.status === "open" || q.status === "claimed",
     );
     for (let i = 0; i < quests.length; i += 5) {

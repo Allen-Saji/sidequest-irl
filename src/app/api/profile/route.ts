@@ -11,16 +11,16 @@ export async function GET() {
   const address = await sessionAddress();
   return Response.json({
     address,
-    profile: address ? getProfile(address) : null,
+    profile: address ? await getProfile(address) : null,
   });
 }
 export async function POST(request: Request) {
   try {
     checkOrigin(request);
     const address = await requireSession();
-    rateLimit(`profile:${address}`);
+    await rateLimit(`profile:${address}`);
     const data = profileSchema.parse(await body(request));
-    const previous = getProfile(address);
+    const previous = await getProfile(address);
     const profile = {
       address,
       name: data.name,
@@ -32,7 +32,7 @@ export async function POST(request: Request) {
       demo: previous?.demo ?? false,
       color: previous?.color ?? parseInt(address.slice(-2), 16) % 4,
     };
-    saveProfile(profile);
+    await saveProfile(profile);
     return Response.json({ profile });
   } catch (error) {
     return apiError(error);

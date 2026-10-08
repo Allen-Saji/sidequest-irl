@@ -1,6 +1,6 @@
 import { randomBytes, createHash } from "node:crypto";
 import { cookies } from "next/headers";
-import { db } from "./db";
+import { getSession, saveSession } from "./db";
 export const SESSION_COOKIE = "sidequest_session";
 export function tokenHash(token: string) {
   return createHash("sha256").update(token).digest("hex");
@@ -8,21 +8,20 @@ export function tokenHash(token: string) {
 export async function sessionAddress(): Promise<string | null> {
   const token = (await cookies()).get(SESSION_COOKIE)?.value;
   if (!token) return null;
-  const row = db()
-    .prepare("SELECT address FROM sessions WHERE token=? AND expires>?")
-    .get(tokenHash(token), Date.now());
-  return (row?.address as string) ?? null;
+  return getSession(tokenHash(token));
 }
 export async function requireSession() {
   const address = await sessionAddress();
   if (!address) throw new Error("Sign in with your wallet first.");
   return address;
 }
-export function newSession(address: string) {
+export async function newSession(address: string) {
   const token = randomBytes(32).toString("hex");
-  db()
-    .prepare("INSERT INTO sessions VALUES (?,?,?)")
-    .run(tokenHash(token), address, Date.now() + 24 * 60 * 60 * 1000);
+  await saveSession(
+    tokenHash(token),
+    address,
+    Date.now() + 24 * 60 * 60 * 1000,
+  );
   return token;
 }
 export function requestOrigin(request: Request) {

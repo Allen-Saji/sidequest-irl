@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { cookies } from "next/headers";
 import { isValidPersonalMessageSignature } from "@mysten/sui/verify";
-import { db } from "@/lib/db";
+import { getChallenge, consumeChallenge, deleteSession } from "@/lib/db";
 import {
   body,
   checkOrigin,
@@ -21,9 +21,7 @@ export async function POST(request: Request) {
         signature: z.string().max(5000),
       })
       .parse(await body(request));
-    const row = db()
-      .prepare("SELECT * FROM challenges WHERE nonce=? AND expires>?")
-      .get(nonce, Date.now());
+    const row = await getChallenge(nonce);
     if (!row) throw new Error("Sign-in expired. Please try again.");
     const valid = await isValidPersonalMessageSignature(
       new TextEncoder().encode(row.message as string),
@@ -31,12 +29,9 @@ export async function POST(request: Request) {
       { address: row.address as string, client: chain },
     );
     if (!valid) throw new Error("The wallet signature could not be verified.");
-    const consumed = db()
-      .prepare("DELETE FROM challenges WHERE nonce=?")
-      .run(nonce);
-    if (!consumed.changes)
+    if (!(await consumeChallenge(nonce)))
       throw new Error("This sign-in request was already used.");
-    const token = newSession(row.address as string);
+    const token = await newSession(row.address as string);
     (await cookies()).set(SESSION_COOKIE, token, {
       httpOnly: true,
       sameSite: "strict",
@@ -54,8 +49,7 @@ export async function DELETE(request: Request) {
     checkOrigin(request);
     const jar = await cookies();
     const token = jar.get(SESSION_COOKIE)?.value;
-    if (token)
-      db().prepare("DELETE FROM sessions WHERE token=?").run(tokenHash(token));
+    if (token) await deleteSession(tokenHash(token));
     jar.delete(SESSION_COOKIE);
     return Response.json({ ok: true });
   } catch (error) {

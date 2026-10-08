@@ -1,5 +1,11 @@
 import { randomBytes } from "node:crypto";
-import { db, getProfiles, getProfile, getQuests, rateLimit } from "@/lib/db";
+import {
+  saveDraft,
+  getProfiles,
+  getProfile,
+  getQuests,
+  rateLimit,
+} from "@/lib/db";
 import {
   body,
   checkOrigin,
@@ -20,7 +26,7 @@ export async function GET() {
       "Could not refresh testnet state. Reconnect before taking action.";
   }
   const address = await sessionAddress();
-  const allProfiles = getProfiles();
+  const allProfiles = await getProfiles();
   const profiles = allProfiles.filter(
     (p) => p.visible || p.address === address,
   );
@@ -28,7 +34,7 @@ export async function GET() {
   const demoAddresses = new Set(
     allProfiles.filter((p) => p.demo).map((p) => p.address),
   );
-  const quests = getQuests()
+  const quests = (await getQuests())
     .filter(
       (q) => visible.has(q.creator) || (!!address && q.helper === address),
     )
@@ -51,8 +57,9 @@ export async function POST(request: Request) {
   try {
     checkOrigin(request);
     const address = await requireSession();
-    rateLimit(`quest:${address}`, 10);
-    if (!getProfile(address)?.visible)
+    await rateLimit(`quest:${address}`, 10);
+    const profile = await getProfile(address);
+    if (!profile?.visible)
       throw new Error(
         "Join the event with a visible profile before creating a quest.",
       );
@@ -62,11 +69,9 @@ export async function POST(request: Request) {
       ...data,
       reference,
       createdAt: Date.now(),
-      demo: getProfile(address)?.demo ?? false,
+      demo: profile?.demo ?? false,
     };
-    db()
-      .prepare("INSERT INTO drafts VALUES (?,?,?)")
-      .run(reference, address, JSON.stringify(draft));
+    await saveDraft(reference, address, draft);
     return Response.json({ reference });
   } catch (error) {
     return apiError(error);

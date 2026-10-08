@@ -11,7 +11,7 @@ if (existsSync(".local/chain-smoke.json")) {
   );
   process.exit(0);
 }
-const { db, saveProfile } = await import("../src/lib/db");
+const { saveDraft, saveProfile } = await import("../src/lib/db");
 const { refreshQuest, syncTransaction } = await import("../src/lib/chain");
 const { createQuestTransaction, questTransaction } =
   await import("../src/lib/transactions");
@@ -56,19 +56,26 @@ const profiles = [
     color: 2,
   },
 ];
-actors.forEach((actor, i) =>
-  saveProfile({
-    ...profiles[i],
-    address: actor.toSuiAddress(),
-    demo: true,
-    visible: true,
-    availableUntil: 0,
-  }),
+await Promise.all(
+  actors.map((actor, i) =>
+    saveProfile({
+      ...profiles[i],
+      address: actor.toSuiAddress(),
+      demo: true,
+      visible: true,
+      availableUntil: 0,
+    }),
+  ),
 );
 const records: { step: string; digest?: string; questId?: string }[] = [];
 async function create(
   signer: typeof creator,
-  metadata: { title: string; ask: string; kind: string; minutes?: number },
+  metadata: {
+    title: string;
+    ask: string;
+    kind: "pitch" | "debug" | "learn" | "demo";
+    minutes?: number;
+  },
 ) {
   const reference = randomBytes(32).toString("hex");
   const draft = {
@@ -79,9 +86,7 @@ async function create(
     createdAt: Date.now(),
     demo: true,
   };
-  db()
-    .prepare("INSERT INTO drafts VALUES (?,?,?)")
-    .run(reference, signer.toSuiAddress(), JSON.stringify(draft));
+  await saveDraft(reference, signer.toSuiAddress(), draft);
   const tx = await execute(createQuestTransaction(reference), signer);
   const event = tx.events.find(
     (e) => e.eventType === `${deployment.packageId}::quest::QuestChanged`,
